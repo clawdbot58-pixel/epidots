@@ -12,12 +12,12 @@ case "$1" in
   on)
     touch "$CONF/enabled"
     apply
-    echo "epidots: ON — applied now and at every login (log out/in or restart i3 for the i3 config)"
+    echo "epidots: ON — applied now (i3 reloaded) and at every login"
     ;;
   off)
     rm -f "$CONF/enabled"
     unapply
-    echo "epidots: OFF — home is vanilla again; nothing runs at next login"
+    echo "epidots: OFF — stock i3 config restored, daemons stopped (i3 reloaded); stays vanilla at next login"
     ;;
   sync)
     [ -f "$CONF/enabled" ] || { echo "rice: run 'rice on' first" >&2; exit 1; }

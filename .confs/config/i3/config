@@ -11,12 +11,14 @@ exec --no-startup-id sh -c 'w=$(cat "$HOME/afs/.confs/wallpaper" 2>/dev/null); [
 # notification daemon + auto-lock (installed by the rice profile; guarded)
 # daemons: exec_always (runs at startup AND after every i3 restart),
 # pgrep-guarded so a restart never starts a second copy
-exec_always --no-startup-id sh -c 'pgrep -x dunst >/dev/null || { command -v dunst >/dev/null && dunst; }'
+exec_always --no-startup-id sh -c 'pgrep -x dunst >/dev/null || pgrep -x .dunst-wrapped >/dev/null || { command -v dunst >/dev/null && dunst; }'
 exec_always --no-startup-id sh -c 'pgrep -x xss-lock >/dev/null || { command -v xss-lock >/dev/null && xss-lock --transfer-sleep-lock -- i3lock --nofork; }'
 # auto-lock after 5 minutes idle
 exec_always --no-startup-id sh -c 'pgrep -x xautolock >/dev/null || { command -v xautolock >/dev/null && xautolock -time 5 -locker i3lock; }'
-# compositor (tearing/alpha; no config = default look)
-exec_always --no-startup-id sh -c 'pgrep -x picom >/dev/null || { command -v picom >/dev/null && picom --daemon; }'
+# compositor: vsync + full damage tracking (config fixes tearing/stale regions)
+exec_always --no-startup-id sh -c 'pgrep -x picom >/dev/null || { command -v picom >/dev/null && picom --config "$HOME/afs/.confs/picom.conf" --daemon; }'
+# VM-only: virtio-gpu has no 1280x720 mode in EDID — add it (no-op on real machines)
+exec_always --no-startup-id sh -c 'command -v xrandr >/dev/null && xrandr --output Virtual-1 --mode "1280x720_60.00" 2>/dev/null || { xrandr --newmode "1280x720_60.00" 74.50 1280 1344 1472 1664 720 723 728 748 -hsync +vsync 2>/dev/null; xrandr --addmode Virtual-1 "1280x720_60.00" 2>/dev/null; xrandr --output Virtual-1 --mode "1280x720_60.00" 2>/dev/null; }; true'
 
 # terminal + launcher
 bindsym $mod+Return exec alacritty

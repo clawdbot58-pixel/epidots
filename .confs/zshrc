@@ -4,7 +4,7 @@ export PATH="$HOME/.nix-profile/bin:$HOME/afs/.confs/bin:$PATH"
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=10000
 SAVEHIST=10000
-setopt SHARE_HISTORY IGNORE_DUPS EXTENDED_GLOB AUTO_CD
+setopt SHARE_HISTORY HIST_IGNORE_DUPS EXTENDED_GLOB AUTO_CD
 
 # completion
 autoload -Uz compinit

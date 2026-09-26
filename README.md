@@ -4,14 +4,114 @@ Functionality-first NixOS/EPITA rice that lives **entirely in AFS** (`~/afs`).
 The system stays vanilla — home is wiped on every boot, so everything is
 re-applied automatically at login.
 
+## Install (school machine)
+
+```sh
+git clone https://github.com/clawdbot58-pixel/epidots.git /tmp/epidots
+cp -r /tmp/epidots/.confs /tmp/epidots/rice ~/afs/
+chmod +x ~/afs/rice ~/afs/.confs/install.sh
+~/afs/rice on
+```
+
+Note: `.confs` is a dotfile — `cp -r /tmp/epidots/*` will NOT copy it.
+
+That's it. Log out / in once and the rice applies itself from then on.
+
 ## On / off switch
 
 ```sh
 ~/afs/rice on      # apply (also auto-applies at every login from now on)
-~/afs/rice off     # remove everything we added — back to vanilla
+~/afs/rice off     # remove everything we added — back to vanilla, takes effect immediately
 ~/afs/rice status  # what's enabled, what's linked, profile state
-~/afs/rice sync    # force re-apply (after editing manifest.txt)
+~/afs/rice sync    # force re-install packages (after editing manifest.txt)
 ```
+
+`rice on` / `rice off` restart i3 right away — no logout needed.
+
+## Keyboard shortcuts
+
+`Mod` = the Windows/Super key. Bindings live in `.confs/config/i3/config`.
+
+### Launch
+
+| Keys | Action |
+|---|---|
+| `Mod+Return` | terminal (alacritty) |
+| `Mod+d` | app launcher (rofi) |
+| `Mod+t` | editor (VSCodium, Python out of the box) |
+
+### Windows
+
+| Keys | Action |
+|---|---|
+| `Mod+Shift+q` | close window |
+| `Mod+Shift+space` | pop window out of the layout (floating) / back in |
+| `Mod+space` | focus the other window (mode toggle) |
+| `Mod+f` | fullscreen toggle |
+| `Mod+a` | focus parent container |
+| `Mod+left-drag` | move window (floating or tiled) |
+| `Mod+right-drag` | resize window |
+| `Mod+Shift+e` | exit i3 (confirmation bar) |
+
+### Focus / move
+
+| Keys | Action |
+|---|---|
+| `Mod+j/k/l/;` | focus left / down / up / right |
+| `Mod+arrows` | same, with arrow keys |
+| `Mod+Shift+j/k/l/;` or `Mod+Shift+arrows` | move window in that direction |
+
+### Layout & workspaces
+
+| Keys | Action |
+|---|---|
+| `Mod+h` / `Mod+v` | split horizontal / vertical |
+| `Mod+s` / `Mod+w` / `Mod+e` | stacking / tabbed / toggle split |
+| `Mod+1..0` | switch to workspace 1–10 |
+| `Mod+Shift+1..0` | move window to workspace 1–10 |
+| `Mod+r` then `j/k/l/;` | resize mode (Enter/Esc to exit) |
+
+### Session
+
+| Keys | Action |
+|---|---|
+| `Mod+Ctrl+l` | lock now (also locks automatically after 5 min idle) |
+| `Print` / `Mod+Shift+s` | region screenshot → `~/Pictures/` |
+| `Mod+Shift+c` | reload i3 config |
+| `Mod+Shift+r` | restart i3 (picks up daemons too) |
+| Volume keys | volume up / down / mute |
+
+## Terminal tips
+
+- **fzf**: `Ctrl+R` fuzzy history · `Ctrl+T` fuzzy file pick · `Alt+C` fuzzy cd
+- **eza**: `ll`, `la`, `lt` (tree), plain `ls` grouped by directory
+- **bat**: `cat` now pages with syntax highlighting
+- **zsh**: type a command, grey suggestion appears → `→` to accept it;
+  syntax highlighting turns valid commands green. Switch shell: `chsh -s $(command -v zsh)`
+- **tmux**: mouse on, `tmux` to start
+
+## What you get
+
+- **rofi** launcher, **alacritty** terminal, **thunar** file manager
+- **VSCodium** with Python extension (dot-completions, no Pylance needed)
+- **zsh** (autosuggestions, syntax highlighting, completions), **fzf**
+- **eza / bat / fd / ripgrep / zoxide / starship**
+- **tmux**, **btop**, **dunst** notifications, **xss-lock + xautolock** (5 min)
+- **picom** with vsync (no tearing when moving windows)
+- The vanilla EPITA wallpaper stays untouched (stealth mode). To use your own:
+  `echo /path/to/img > ~/afs/.confs/wallpaper`
+
+## Adding / removing packages
+
+Edit `.confs/manifest.txt` (one package per line), then:
+
+```sh
+rm -rf ~/afs/.confs/nix-profile   # force a full re-install
+~/afs/rice sync
+```
+
+Binaries live in `/nix/store`, profile symlinks in AFS — a few KB each,
+well under the 10 GB quota.
 
 ## How it works
 
@@ -19,12 +119,13 @@ re-applied automatically at login.
   (GUI, SSH, screen unlock). It does nothing unless `~/afs/.confs/enabled` exists.
 - `install.sh` symlinks dotfiles from `.confs/` into `$HOME` and keeps
   `~/.nix-profile` pointed at `.confs/nix-profile` (a profile full of symlinks
-  into `/nix/store` — a few KB of AFS, well under the 10 GB quota).
+  into `/nix/store` — a few KB of AFS).
 - Packages come from `.confs/manifest.txt` and are installed with
   `nix profile install --profile` only when the manifest changes (so logins
-  stay fast). Binaries live in `/nix/store`, **not** in AFS.
-- `rice off` deletes the `enabled` flag and removes only symlinks that point
-  into `~/afs` — your home is vanilla again and nothing runs at next login.
+  stay fast).
+- `rice off` deletes the `enabled` flag, removes only symlinks pointing into
+  `~/afs`, restores the stock i3 config, and stops the daemons — your home is
+  vanilla again and nothing runs at next login.
 
 ## Layout
 
@@ -40,30 +141,10 @@ re-applied automatically at login.
     ├── bashrc           # -> ~/.bashrc and ~/.profile
     ├── zshrc            # -> ~/.zshrc
     ├── tmux.conf        # -> ~/.tmux.conf
-    ├── wallpaper        # optional: path to an image (else solid color)
+    ├── picom.conf       # vsync compositor config
+    ├── wallpaper        # optional: path to an image
     └── config/i3/config # -> ~/.config/i3/config
 ```
-
-## What you get
-
-- **rofi** launcher (`Mod+d`), **alacritty** (`Mod+Return`), **thunar** file manager
-- **zsh** with autosuggestions, syntax highlighting, completions; **fzf** (Ctrl-R / Ctrl-T / Alt-C)
-- **eza / bat / fd / ripgrep / zoxide / starship** aliases and prompt
-- **tmux** (mouse on), **btop**, **ncdu**, **htop** (last two are already on nixpie)
-- **dunst** notifications, **xss-lock** auto-lock, region screenshots (`Print`)
-- solid dark background (`#1e1e2e`) instead of the EPITA image; set an image with
-  `echo /path/to/img > ~/afs/.confs/wallpaper`
-
-## Fresh install (school machine)
-
-```sh
-git clone https://github.com/clawdbot58-pixel/epidots.git /tmp/epidots
-cp -r /tmp/epidots/.confs /tmp/epidots/rice ~/afs/
-chmod +x ~/afs/rice ~/afs/.confs/install.sh
-~/afs/rice on
-```
-
-Note: `.confs` is a dotfile — `cp -r /tmp/epidots/*` will NOT copy it.
 
 ## Uninstall
 
