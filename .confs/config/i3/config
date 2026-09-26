@@ -1,0 +1,134 @@
+# epidots i3 config — applied to ~/.config/i3/config at every login.
+# Functionality first; visuals only where they cost nothing.
+
+set $mod Mod4
+font pango:monospace 10
+
+# wallpaper: untouched by default — keeps the vanilla EPITA background (stealth).
+# to override with an image: echo /path/to/image > ~/afs/.confs/wallpaper
+exec --no-startup-id sh -c 'w=$(cat "$HOME/afs/.confs/wallpaper" 2>/dev/null); [ -n "$w" ] && [ -f "$w" ] && feh --bg-scale "$w"; true'
+
+# notification daemon + auto-lock (installed by the rice profile; guarded)
+# daemons: exec_always (runs at startup AND after every i3 restart),
+# pgrep-guarded so a restart never starts a second copy
+exec_always --no-startup-id sh -c 'pgrep -x dunst >/dev/null || { command -v dunst >/dev/null && dunst; }'
+exec_always --no-startup-id sh -c 'pgrep -x xss-lock >/dev/null || { command -v xss-lock >/dev/null && xss-lock --transfer-sleep-lock -- i3lock --nofork; }'
+# auto-lock after 5 minutes idle
+exec_always --no-startup-id sh -c 'pgrep -x xautolock >/dev/null || { command -v xautolock >/dev/null && xautolock -time 5 -locker i3lock; }'
+# compositor (tearing/alpha; no config = default look)
+exec_always --no-startup-id sh -c 'pgrep -x picom >/dev/null || { command -v picom >/dev/null && picom --daemon; }'
+
+# terminal + launcher
+bindsym $mod+Return exec alacritty
+bindsym $mod+d exec --no-startup-id sh -c 'command -v rofi >/dev/null && rofi -show drun || dmenu_run'
+# GUI editor (vscodium: syntax highlighting, dot-suggestions in python)
+bindsym $mod+t exec --no-startup-id sh -c 'command -v codium >/dev/null && codium'
+
+# kubuntu-style mouse: mod+left = move, mod+right = resize (floating and tiled)
+floating_modifier Mod4
+
+# lock + screenshot (region select)
+bindsym $mod+Ctrl+l exec i3lock
+bindsym Print exec --no-startup-id sh -c 'mkdir -p "$HOME/Pictures"; scrot -s "$HOME/Pictures/shot_$(date +%Y%m%d-%H%M%S).png"'
+bindsym $mod+Shift+s exec --no-startup-id sh -c 'mkdir -p "$HOME/Pictures"; scrot -s "$HOME/Pictures/shot_$(date +%Y%m%d-%H%M%S).png"'
+
+# window management
+bindsym $mod+Shift+q kill
+bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+
+# focus
+bindsym $mod+j focus left
+bindsym $mod+k focus down
+bindsym $mod+l focus up
+bindsym $mod+semicolon focus right
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# move
+bindsym $mod+Shift+j move left
+bindsym $mod+Shift+k move down
+bindsym $mod+Shift+l move up
+bindsym $mod+Shift+semicolon move right
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# split / layout
+bindsym $mod+h split h
+bindsym $mod+v split v
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# workspaces
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+5 workspace number $ws5
+bindsym $mod+6 workspace number $ws6
+bindsym $mod+7 workspace number $ws7
+bindsym $mod+8 workspace number $ws8
+bindsym $mod+9 workspace number $ws9
+bindsym $mod+0 workspace number $ws10
+
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+bindsym $mod+Shift+5 move container to workspace number $ws5
+bindsym $mod+Shift+6 move container to workspace number $ws6
+bindsym $mod+Shift+7 move container to workspace number $ws7
+bindsym $mod+Shift+8 move container to workspace number $ws8
+bindsym $mod+Shift+9 move container to workspace number $ws9
+bindsym $mod+Shift+0 move container to workspace number $ws10
+
+# session
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3?' -B 'Exit' 'i3-msg exit'"
+
+# volume (machines with pactl; silently no-op otherwise)
+bindsym XF86AudioRaiseVolume exec --no-startup-id sh -c 'command -v pactl >/dev/null && pactl set-sink-volume @DEFAULT_SINK@ +10%'
+bindsym XF86AudioLowerVolume exec --no-startup-id sh -c 'command -v pactl >/dev/null && pactl set-sink-volume @DEFAULT_SINK@ -10%'
+bindsym XF86AudioMute exec --no-startup-id sh -c 'command -v pactl >/dev/null && pactl set-sink-mute @DEFAULT_SINK@ toggle'
+
+# resize mode
+mode "resize" {
+        bindsym j resize shrink width 10 px or 10 ppt
+        bindsym k resize grow width 10 px or 10 ppt
+        bindsym l resize grow height 10 px or 10 ppt
+        bindsym semicolon resize shrink height 10 px or 10 ppt
+
+        bindsym Left resize shrink width 10 px or 10 ppt
+        bindsym Down resize grow height 10 px or 10 ppt
+        bindsym Up resize shrink height 10 px or 10 ppt
+        bindsym Right resize grow width 10 px or 10 ppt
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+        bindsym $mod+r mode "default"
+}
+bindsym $mod+r mode "resize"
+
+bar {
+        status_command i3status
+        position top
+}

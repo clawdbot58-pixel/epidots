@@ -1,0 +1,52 @@
+#!/bin/sh
+# rice — on/off switch for the epidots configuration.
+# Usage: ~/afs/rice {on|off|status|sync}
+AFS_DIR="${AFS_DIR:-$HOME/afs}"
+CONF="$AFS_DIR/.confs"
+export PATH="/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH"
+
+[ -f "$CONF/lib.sh" ] || { echo "rice: $CONF/lib.sh missing" >&2; exit 1; }
+. "$CONF/lib.sh"
+
+case "$1" in
+  on)
+    touch "$CONF/enabled"
+    apply
+    echo "epidots: ON — applied now and at every login (log out/in or restart i3 for the i3 config)"
+    ;;
+  off)
+    rm -f "$CONF/enabled"
+    unapply
+    echo "epidots: OFF — home is vanilla again; nothing runs at next login"
+    ;;
+  sync)
+    [ -f "$CONF/enabled" ] || { echo "rice: run 'rice on' first" >&2; exit 1; }
+    apply
+    echo "epidots: re-applied (manifest changes are installed automatically)"
+    ;;
+  status)
+    if [ -f "$CONF/enabled" ]; then
+      echo "state: ON"
+    else
+      echo "state: OFF"
+    fi
+    echo "links:"
+    for f in .bashrc .profile .zshrc .tmux.conf .config/i3/config .nix-profile; do
+      dst="$HOME/$f"
+      if [ -L "$dst" ]; then
+        printf '  %-20s -> %s\n' "$f" "$(readlink "$dst")"
+      else
+        printf '  %-20s (absent)\n' "$f"
+      fi
+    done
+    if [ -f "$CONF/.manifest.sha" ]; then
+      echo "profile: installed (manifest hash ok)"
+    else
+      echo "profile: not installed yet"
+    fi
+    ;;
+  *)
+    echo "usage: rice {on|off|status|sync}" >&2
+    exit 1
+    ;;
+esac

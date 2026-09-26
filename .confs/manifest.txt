@@ -1,0 +1,30 @@
+# Packages installed into ~/afs/.confs/nix-profile (via nix profile install).
+# Edit, then run: ~/afs/rice sync
+# To REMOVE a package: rm -rf ~/afs/.confs/nix-profile && ~/afs/rice sync
+
+# shell
+zsh
+zsh-autosuggestions
+zsh-syntax-highlighting
+bash-completion
+
+# fuzzy finding + terminal utilities
+fzf
+ripgrep
+fd
+bat
+eza
+zoxide
+starship
+
+# desktop functionality
+rofi
+thunar
+btop
+dunst
+xss-lock
+xautolock
+picom
+
+# editor (VS Code without telemetry; python ext + dot-suggestions)
+vscodium
