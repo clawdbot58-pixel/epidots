@@ -7,6 +7,7 @@ zsh
 zsh-autosuggestions
 zsh-syntax-highlighting
 bash-completion
+pay-respects
 
 # fuzzy finding + terminal utilities
 fzf
@@ -16,6 +17,7 @@ bat
 eza
 zoxide
 starship
+ranger
 
 # desktop functionality
 rofi

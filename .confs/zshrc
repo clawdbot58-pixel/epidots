@@ -5,6 +5,8 @@ HISTFILE="$HOME/.zsh_history"
 HISTSIZE=10000
 SAVEHIST=10000
 setopt SHARE_HISTORY HIST_IGNORE_DUPS EXTENDED_GLOB AUTO_CD
+# CORRECT: suggest the right spelling of a mistyped command/cd path
+setopt CORRECT
 
 # completion
 autoload -Uz compinit
@@ -20,6 +22,12 @@ zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 
 # fzf: Ctrl-R history, Ctrl-T files, Alt-C cd
 command -v fzf >/dev/null 2>&1 && eval "$(fzf --zsh 2>/dev/null)" || true
+
+# zoxide: smart `z dir` jumps to frecent directories
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh 2>/dev/null)" || true
+
+# pay-respects: `fuck` retries the last command with a corrected typo
+command -v pay-respects >/dev/null 2>&1 && eval "$(pay-respects zsh --alias fuck 2>/dev/null)" || true
 
 # prompt (plain fallback if starship missing)
 if command -v starship >/dev/null 2>&1; then

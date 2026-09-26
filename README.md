@@ -83,19 +83,29 @@ That's it. Log out / in once and the rice applies itself from then on.
 
 ## Terminal tips
 
+- **zsh is your shell** — login shells hand over to it automatically (no
+  `chsh` needed; `/etc/passwd` is reset at every boot anyway). Plain `bash`
+  stays vanilla if you start it yourself.
+- **suggestions**: type a command → grey suggestion appears → `→` to accept;
+  syntax highlighting turns valid commands green; a mistyped command gets a
+  `correct` prompt (say `y`).
+- **fuck**: typo in the last command? `fuck` fixes and re-runs it
+  (pay-respects, the maintained thefuck alternative).
 - **fzf**: `Ctrl+R` fuzzy history · `Ctrl+T` fuzzy file pick · `Alt+C` fuzzy cd
+- **zoxide**: `z dir` jumps to a directory you use often (after `cd`ing there)
 - **eza**: `ll`, `la`, `lt` (tree), plain `ls` grouped by directory
 - **bat**: `cat` now pages with syntax highlighting
-- **zsh**: type a command, grey suggestion appears → `→` to accept it;
-  syntax highlighting turns valid commands green. Switch shell: `chsh -s $(command -v zsh)`
-- **tmux**: mouse on, `tmux` to start
+- **ranger**: file manager in the terminal (arrow keys, `q` to quit, `?` help)
+- **tmux**: mouse on — click panes, drag status bar, scroll with the wheel;
+  `tmux` to start
 
 ## What you get
 
 - **rofi** launcher, **alacritty** terminal, **thunar** file manager
 - **VSCodium** with Python extension (dot-completions, no Pylance needed)
-- **zsh** (autosuggestions, syntax highlighting, completions), **fzf**
-- **eza / bat / fd / ripgrep / zoxide / starship**
+- **zsh** as the default shell (autosuggestions, syntax highlighting,
+  typo-correction, completions), **fzf**, **pay-respects** (`fuck`)
+- **eza / bat / fd / ripgrep / zoxide / starship / ranger**
 - **tmux**, **btop**, **dunst** notifications, **xss-lock + xautolock** (5 min)
 - **picom** with vsync (no tearing when moving windows)
 - The vanilla EPITA wallpaper stays untouched (stealth mode). To use your own:
@@ -124,8 +134,25 @@ well under the 10 GB quota.
   `nix profile install --profile` only when the manifest changes (so logins
   stay fast).
 - `rice off` deletes the `enabled` flag, removes only symlinks pointing into
-  `~/afs`, restores the stock i3 config, and stops the daemons — your home is
-  vanilla again and nothing runs at next login.
+  `~/afs`, regenerates the stock EPITA i3 config (Windows key = mod, via
+  `i3-config-wizard`), and stops the daemons — your home is vanilla again
+  and nothing runs at next login.
+
+## How the pieces fit together
+
+```text
+login (PAM) ──▶ install.sh ──▶ lib.sh apply() ──▶ symlinks + nix profile
+                     │                                │
+                     │                                ├─ .profile   ─▶ hands login shell to zsh
+                     │                                ├─ .bashrc    ─▶ vanilla fallback
+                     │                                ├─ .zshrc     ─▶ suggestions, fuck, fzf…
+                     │                                ├─ .tmux.conf ─▶ mouse on
+                     │                                └─ i3 config  ─▶ Mod+Return, rofi…
+                     └─ only if ~/afs/.confs/enabled exists
+
+rice on  = create enabled, apply, restart i3
+rice off = delete enabled, unlink AFS symlinks, EPITA default i3, stop daemons
+```
 
 ## Layout
 
@@ -138,7 +165,8 @@ well under the 10 GB quota.
     ├── lib.sh           # apply/unapply logic
     ├── manifest.txt     # package list (edit + `rice sync`)
     ├── nix-profile/     # nix profile (symlinks to /nix/store; ~KB)
-    ├── bashrc           # -> ~/.bashrc and ~/.profile
+    ├── bashrc           # -> ~/.bashrc (vanilla fallback)
+    ├── profile          # -> ~/.profile (hands login shell to zsh)
     ├── zshrc            # -> ~/.zshrc
     ├── tmux.conf        # -> ~/.tmux.conf
     ├── picom.conf       # vsync compositor config

@@ -53,7 +53,7 @@ reload_i3() {
 apply() {
   export PATH="/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH"
   link "$CONF/bashrc" "$HOME/.bashrc"
-  link "$CONF/bashrc" "$HOME/.profile"
+  link "$CONF/profile" "$HOME/.profile"
   link "$CONF/zshrc" "$HOME/.zshrc"
   link "$CONF/tmux.conf" "$HOME/.tmux.conf"
   link "$CONF/config/i3/config" "$HOME/.config/i3/config"
@@ -83,14 +83,23 @@ unapply() {
   for p in picom xautolock xss-lock dunst .dunst-wrapped; do
     pkill -x "$p" 2>/dev/null
   done
-  # there is no /etc/i3/config on this system: copy the stock default that
-  # ships with the i3 package, so mod+d & friends work again after reload
+  # Restore the EPITA default config (Windows key = mod). The stock sample
+  # shipped with the i3 package uses Mod1 (Alt) and is only a fallback for
+  # systems without X; on EPITA the first-login i3-config-wizard writes the
+  # real Mod4 default. Regenerate it the same way, headless: wizard only
+  # writes when no config exists yet (we just removed our symlink).
   i3bin=$(command -v i3 2>/dev/null)
   if [ -n "$i3bin" ]; then
     i3def="$(dirname "$(readlink -f "$i3bin")")/../etc/i3/config"
-    if [ -f "$i3def" ]; then
-      mkdir -p "$HOME/.config/i3"
-      cp -f "$i3def" "$HOME/.config/i3/config"
+    mkdir -p "$HOME/.config/i3"
+    wiz="$(command -v i3-config-wizard 2>/dev/null)"
+    if [ -n "$wiz" ] && [ ! -e "$HOME/.config/i3/config" ]; then
+      XDG_CONFIG_HOME="$HOME/.config" "$wiz" -m win >/dev/null 2>&1 \
+        || [ -f "$HOME/.config/i3/config" ]
+    fi
+    # fallback: wizard unavailable/failed → patch the stock sample
+    if [ ! -f "$HOME/.config/i3/config" ] && [ -f "$i3def" ]; then
+      sed 's/Mod1/Mod4/g' "$i3def" > "$HOME/.config/i3/config"
     fi
   fi
   reload_i3

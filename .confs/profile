@@ -1,0 +1,15 @@
+# epidots profile — linked to ~/.profile by apply().
+# Makes zsh the everyday shell without touching /etc/passwd: the system is
+# vanilla and /etc/passwd is regenerated at boot, so chsh would not survive
+# anyway. Interactive login shells (SSH, terminals) hand over to zsh here.
+export PATH="$HOME/.nix-profile/bin:$HOME/afs/.confs/bin:$PATH"
+
+case $- in
+  *i*)
+    # only if we were not started *by* zsh (an explicit `bash` stays bash)
+    if [ "$(ps -o comm= -p "$PPID" 2>/dev/null)" != "zsh" ] &&
+       [ -x "$HOME/.nix-profile/bin/zsh" ]; then
+      exec "$HOME/.nix-profile/bin/zsh" -l
+    fi
+    ;;
+esac
