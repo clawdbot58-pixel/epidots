@@ -74,7 +74,8 @@ apply() {
   link_stock_dots
   # ~/.config: stock EPITA and tsunooky/epidots keep the whole tree in AFS.
   # On a fresh login (normal case) the dir doesn't exist yet → link it.
-  if [ ! -e "$HOME/.config" ]; then
+  # (guard on $CONF/config: a truncated conf must not leave a broken ~/.config)
+  if [ ! -e "$HOME/.config" ] && [ -d "$CONF/config" ]; then
     link "$CONF/config" "$HOME/.config"
   fi
   # i3 config is only needed when .config is a real dir (legacy/VM state);
