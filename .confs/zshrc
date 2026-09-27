@@ -27,7 +27,13 @@ command -v fzf >/dev/null 2>&1 && eval "$(fzf --zsh 2>/dev/null)" || true
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh 2>/dev/null)" || true
 
 # pay-respects: `fuck` retries the last command with a corrected typo
-command -v pay-respects >/dev/null 2>&1 && eval "$(pay-respects zsh --alias fuck 2>/dev/null)" || true
+#   fuck  = show fix, Enter to run · ff = run best fix without asking
+#   Ctrl+X twice = fix the line in place, don't run it
+if command -v pay-respects >/dev/null 2>&1; then
+  eval "$(pay-respects zsh --alias fuck 2>/dev/null)" || true
+  alias f='fuck'
+  alias ff='__pr_main noconfirm'
+fi
 
 # prompt (plain fallback if starship missing)
 if command -v starship >/dev/null 2>&1; then

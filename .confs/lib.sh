@@ -55,6 +55,7 @@ apply() {
   link "$CONF/bashrc" "$HOME/.bashrc"
   link "$CONF/profile" "$HOME/.profile"
   link "$CONF/zshrc" "$HOME/.zshrc"
+  link "$CONF/vimrc" "$HOME/.vimrc"
   link "$CONF/tmux.conf" "$HOME/.tmux.conf"
   link "$CONF/config/i3/config" "$HOME/.config/i3/config"
   ensure_profile
@@ -70,7 +71,7 @@ apply() {
 # Remove only symlinks that point into our AFS tree; leave everything else.
 # Restores a true vanilla desktop: stock i3 config, no rice daemons.
 unapply() {
-  for f in .bashrc .profile .zshrc .tmux.conf .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS"; do
+  for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS"; do
     dst="$HOME/$f"
     if [ -L "$dst" ]; then
       case "$(readlink "$dst")" in

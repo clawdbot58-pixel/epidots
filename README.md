@@ -15,7 +15,11 @@ chmod +x ~/afs/rice ~/afs/.confs/install.sh
 
 Note: `.confs` is a dotfile — `cp -r /tmp/epidots/*` will NOT copy it.
 
-That's it. Log out / in once and the rice applies itself from then on.
+That's it — those 4 commands are the full install, nothing else. The login
+hook that re-applies the rice (`pam_epita` running `install.sh`) is a **stock
+nixpie feature**, and everything lands in `~/afs` + symlinks in your home —
+the system itself is never modified. Log out / in once and the rice applies
+itself from then on.
 
 ## On / off switch
 
@@ -89,12 +93,16 @@ That's it. Log out / in once and the rice applies itself from then on.
 - **suggestions**: type a command → grey suggestion appears → `→` to accept;
   syntax highlighting turns valid commands green; a mistyped command gets a
   `correct` prompt (say `y`).
-- **fuck**: typo in the last command? `fuck` fixes and re-runs it
-  (pay-respects, the maintained thefuck alternative).
+- **fuck** (pay-respects, the maintained thefuck): typed a wrong command?
+  `fuck` (or just `f`) shows the fix → `Enter` runs it. `ff` runs the best
+  fix without asking. `Ctrl+X` `Ctrl+X` fixes the line in place without
+  running it (`git comit` → `git commit`, `cd payrespe` → the full path).
 - **fzf**: `Ctrl+R` fuzzy history · `Ctrl+T` fuzzy file pick · `Alt+C` fuzzy cd
 - **zoxide**: `z dir` jumps to a directory you use often (after `cd`ing there)
 - **eza**: `ll`, `la`, `lt` (tree), plain `ls` grouped by directory
 - **bat**: `cat` now pages with syntax highlighting
+- **vim**: ships with syntax highlighting, line numbers, mouse support
+  (system `vim`, config in `.confs/vimrc`)
 - **ranger**: file manager in the terminal (arrow keys, `q` to quit, `?` help)
 - **tmux**: mouse on — click panes, drag status bar, scroll with the wheel;
   `tmux` to start
@@ -106,6 +114,7 @@ That's it. Log out / in once and the rice applies itself from then on.
 - **zsh** as the default shell (autosuggestions, syntax highlighting,
   typo-correction, completions), **fzf**, **pay-respects** (`fuck`)
 - **eza / bat / fd / ripgrep / zoxide / starship / ranger**
+- **vim** with syntax highlighting (`.confs/vimrc`)
 - **tmux**, **btop**, **dunst** notifications, **xss-lock + xautolock** (5 min)
 - **picom** with vsync (no tearing when moving windows)
 - The vanilla EPITA wallpaper stays untouched (stealth mode). To use your own:

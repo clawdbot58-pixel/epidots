@@ -1,0 +1,15 @@
+" epidots vimrc — linked to ~/.vimrc by apply().
+" Syntax highlighting + sane defaults; nothing exotic.
+syntax on
+filetype plugin indent on
+
+set number
+set ruler
+set hlsearch
+set incsearch
+set wildmenu
+set showcmd
+set backspace=indent,eol,start
+set expandtab tabstop=4 shiftwidth=4
+set autowrite
+set mouse=a
