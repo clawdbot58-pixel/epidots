@@ -31,9 +31,11 @@ case "$1" in
       echo "state: OFF"
     fi
     echo "links:"
-    for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config/i3/config .nix-profile; do
+    for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile; do
       dst="$HOME/$f"
-      if [ -L "$dst" ]; then
+      if [ "$f" = ".config/i3/config" ] && [ -L "$HOME/.config" ] && [ -e "$dst" ]; then
+        printf '  %-20s -> %s (via .config)\n' "$f" "$CONF/config/i3/config"
+      elif [ -L "$dst" ]; then
         printf '  %-20s -> %s\n' "$f" "$(readlink "$dst")"
       else
         printf '  %-20s (absent)\n' "$f"

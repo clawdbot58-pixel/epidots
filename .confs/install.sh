@@ -5,9 +5,15 @@ export PATH="/run/current-system/sw/bin:$PATH"
 AFS_DIR="${AFS_DIR:-$HOME/afs}"
 CONF="$AFS_DIR/.confs"
 
-[ -f "$CONF/enabled" ] || exit 0
 [ -f "$CONF/lib.sh" ] || exit 0
-
 . "$CONF/lib.sh"
+
+# rice off (or not installed yet): still link the stock EPITA dotfiles
+# (gitconfig, ssh, …) so replacing the stock install.sh never breaks them.
+if [ ! -f "$CONF/enabled" ]; then
+  link_stock_dots
+  exit 0
+fi
+
 apply
 exit 0

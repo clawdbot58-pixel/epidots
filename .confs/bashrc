@@ -7,9 +7,13 @@ case $- in *i*) ;; *) return ;; esac
 
 # interactive non-login shells (terminal, tmux): hand over to zsh once,
 # unless this bash was started by zsh — an explicit `bash` stays bash.
-if [ "$(ps -o comm= -p "$PPID" 2>/dev/null)" != "zsh" ] &&
-   [ -x "$HOME/.nix-profile/bin/zsh" ]; then
-  exec "$HOME/.nix-profile/bin/zsh" -l
+if [ "$(ps -o comm= -p "$PPID" 2>/dev/null)" != "zsh" ]; then
+  if [ -x "$HOME/.nix-profile/bin/zsh" ]; then
+    export SHELL="$HOME/.nix-profile/bin/zsh"
+    exec "$HOME/.nix-profile/bin/zsh" -l
+  else
+    echo "epidots: zsh not installed yet — run: ~/afs/rice sync"
+  fi
 fi
 
 # fallback prompt (only reached when zsh is not installed yet)

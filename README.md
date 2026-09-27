@@ -6,20 +6,32 @@ re-applied automatically at login.
 
 ## Install (school machine)
 
+One line (same idea as [tsunooky/epidots](https://github.com/tsunooky/epidots)):
+
 ```sh
-git clone https://github.com/clawdbot58-pixel/epidots.git /tmp/epidots
-cp -r /tmp/epidots/.confs /tmp/epidots/rice ~/afs/
+curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installer.sh | sh
+```
+
+Manual equivalent:
+
+```sh
+git clone --depth 1 https://github.com/clawdbot58-pixel/epidots.git /tmp/epidots
+mkdir -p ~/afs/.confs
+cp -r /tmp/epidots/.confs/. ~/afs/.confs/   # merges — stock files (gitconfig, ssh, …) are kept
+cp /tmp/epidots/rice ~/afs/rice
 chmod +x ~/afs/rice ~/afs/.confs/install.sh
 ~/afs/rice on
 ```
 
 Note: `.confs` is a dotfile — `cp -r /tmp/epidots/*` will NOT copy it.
 
-That's it — those 4 commands are the full install, nothing else. The login
-hook that re-applies the rice (`pam_epita` running `install.sh`) is a **stock
-nixpie feature**, and everything lands in `~/afs` + symlinks in your home —
-the system itself is never modified. Log out / in once and the rice applies
-itself from then on.
+That's it — nothing else. The login hook that re-applies the rice
+(`pam_epita` running `~/afs/.confs/install.sh` at every login/unlock) is a
+**stock nixpie feature**, exactly the mechanism tsunooky/epidots relies on,
+and everything lives in `~/afs` + symlinks in your home — the system itself
+is never modified. The stock EPITA dotfiles seeded in `~/afs/.confs`
+(gitconfig, ssh, signature, …) keep working whether the rice is on or off.
+Log out / in once and the rice applies itself from then on.
 
 ## On / off switch
 
@@ -139,6 +151,12 @@ well under the 10 GB quota.
 - `install.sh` symlinks dotfiles from `.confs/` into `$HOME` and keeps
   `~/.nix-profile` pointed at `.confs/nix-profile` (a profile full of symlinks
   into `/nix/store` — a few KB of AFS).
+- The **stock EPITA dotfiles** a school seat seeds into `~/afs/.confs`
+  (gitconfig, gitignore, ssh, signature, …) are linked too — same list as
+  the stock `install.sh` / tsunooky/epidots — so nothing regresses on a real
+  seat, whether the rice is on or off. `~/.config` is linked wholesale into
+  `.confs/config` (stock behaviour) when the home is fresh.
+- Shell **history lives in AFS** (`.confs/.zsh_history`) and survives reboots.
 - Packages come from `.confs/manifest.txt` and are installed with
   `nix profile install --profile` only when the manifest changes (so logins
   stay fast).

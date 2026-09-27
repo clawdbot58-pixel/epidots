@@ -16,6 +16,18 @@ link() {
   ln -sfn "$src" "$dst"
 }
 
+# Stock EPITA dotfiles that a school seat seeds into ~/afs/.confs
+# (gitconfig, ssh, signature, …). Same list as the stock install.sh and
+# tsunooky/epidots — we link them too so a real seat keeps working.
+# Only linked when the file exists: a bare clone has none of these.
+STOCK_DOTS="gitconfig gitignore signature ssh Xdefaults gdbinit emacs thunderbird mozilla vim"
+link_stock_dots() {
+  for f in $STOCK_DOTS; do
+    [ -e "$CONF/$f" ] && link "$CONF/$f" "$HOME/.$f"
+  done
+  return 0
+}
+
 # Install packages from manifest.txt into the AFS profile (symlinks into
 # /nix/store; a few KB in AFS). Re-runs only when the manifest changes.
 ensure_profile() {
@@ -33,7 +45,9 @@ ensure_profile() {
   # as a symlink (-> <name>-N-link). A plain directory makes nix fail with
   # "reading symbolic link ...: Invalid argument".
   mkdir -p "$(dirname "$PROFILE")"
-  if nix profile install --profile "$PROFILE" "$@"; then
+  # `install` on older nix, `add` on newer — same fallback as tsunooky/epidots
+  if nix profile install --profile "$PROFILE" "$@" ||
+     nix profile add --profile "$PROFILE" "$@"; then
     # The profile generation resolves into /nix/store (immutable), so the
     # state file must live beside the manifest, not inside the profile.
     echo "$want" > "$CONF/.manifest.sha"
@@ -57,7 +71,17 @@ apply() {
   link "$CONF/zshrc" "$HOME/.zshrc"
   link "$CONF/vimrc" "$HOME/.vimrc"
   link "$CONF/tmux.conf" "$HOME/.tmux.conf"
-  link "$CONF/config/i3/config" "$HOME/.config/i3/config"
+  link_stock_dots
+  # ~/.config: stock EPITA and tsunooky/epidots keep the whole tree in AFS.
+  # On a fresh login (normal case) the dir doesn't exist yet → link it.
+  if [ ! -e "$HOME/.config" ]; then
+    link "$CONF/config" "$HOME/.config"
+  fi
+  # i3 config is only needed when .config is a real dir (legacy/VM state);
+  # if ~/.config IS our AFS tree the file already lives at the right path.
+  if [ ! -L "$HOME/.config" ] || [ "$(readlink "$HOME/.config")" != "$CONF/config" ]; then
+    link "$CONF/config/i3/config" "$HOME/.config/i3/config"
+  fi
   ensure_profile
   link "$PROFILE" "$HOME/.nix-profile"
   # vscodium state (extensions, settings) lives in AFS so it survives wipes
@@ -71,7 +95,11 @@ apply() {
 # Remove only symlinks that point into our AFS tree; leave everything else.
 # Restores a true vanilla desktop: stock i3 config, no rice daemons.
 unapply() {
-  for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS"; do
+  # .config MUST come before its children: when ~/.config is our AFS
+  # symlink, rm -f on an inner path would resolve through it and delete
+  # the real file in AFS. After the parent link is gone the inner entries
+  # are no-ops.
+  for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS"; do
     dst="$HOME/$f"
     if [ -L "$dst" ]; then
       case "$(readlink "$dst")" in
