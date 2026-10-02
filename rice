@@ -200,7 +200,8 @@ case "$1" in
       _au=$(cat "$CONF/.auto-update" 2>/dev/null)
       case "$_au" in '' | *[!0-9]*) _au=0 ;; esac
       _age=$(( ($(date +%s) - _au) / 86400 ))
-      echo "  auto-update: enabled, last check: ${_au}s ago (${_age}d), gate 7d"
+      _secs=$(( $(date +%s) - _au ))
+      echo "  auto-update: enabled, last check: ${_secs}s ago (${_age}d), gate 7d"
     fi
     echo "  self-update: ~/afs/rice update    full report: re-run ~/afs/rice diag"
     ;;
