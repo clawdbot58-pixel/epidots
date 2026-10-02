@@ -76,6 +76,11 @@ case "$1" in
       rm -rf "$TMP"
       exit 1
     fi
+    # record what we are on, so bin/autoupdate can compare against GitHub
+    if [ -d "$TMP/e/.git" ]; then
+      _sha=$(git -C "$TMP/e" rev-parse HEAD 2>/dev/null)
+      [ -n "$_sha" ] && echo "$_sha" > "$CONF/.github-sha"
+    fi
     cp -r "$TMP/e/.confs/." "$CONF/"
     # atomic replace: a running shell keeps reading the old inode
     cp "$TMP/e/rice" "$AFS_DIR/rice.new" &&
@@ -189,6 +194,14 @@ case "$1" in
     echo "--- hints ---"
     [ -f "$CONF/enabled" ] || echo "  rice is OFF: ~/afs/rice on"
     [ ! -L "$HOME/.zshrc" ] && echo "  links missing: ~/afs/rice on"
+    if [ -f "$CONF/no-autoupdate" ]; then
+      echo "  auto-update: DISABLED (no-autoupdate)"
+    else
+      _au=$(cat "$CONF/.auto-update" 2>/dev/null)
+      case "$_au" in '' | *[!0-9]*) _au=0 ;; esac
+      _age=$(( ($(date +%s) - _au) / 86400 ))
+      echo "  auto-update: enabled, last check: ${_au}s ago (${_age}d), gate 7d"
+    fi
     echo "  self-update: ~/afs/rice update    full report: re-run ~/afs/rice diag"
     ;;
   uninstall)
@@ -199,7 +212,7 @@ case "$1" in
     # mozilla, …), user history and VS Code state stay untouched
     for f in bashrc profile zshrc vimrc tmux.conf picom.conf lib.sh \
              install.sh manifest.txt .manifest.sha enabled installer.sh \
-             bin local-share; do
+             bin local-share .auto-update .github-sha no-autoupdate; do
       rm -rf "$CONF/$f"
     done
     rm -rf "$CONF/config/i3"

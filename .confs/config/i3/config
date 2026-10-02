@@ -16,6 +16,9 @@ exec --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/setwall'
 exec_always --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/daemons'
 # VM-only: virtio-gpu has no 1280x720 mode in EDID — add it (no-op on real machines)
 exec_always --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/vmode'
+# automatic updates: quiet background check against GitHub (7-day gate,
+# opt-out: touch ~/afs/.confs/no-autoupdate)
+exec_always --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/autoupdate'
 
 # terminal + launcher
 bindsym $mod+Return exec alacritty

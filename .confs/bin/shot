@@ -14,6 +14,17 @@ else
   echo "shot: no screenshot tool (scrot/maim/import)" >&2
   exit 1
 fi
-[ -f "$f" ] && command -v notify-send >/dev/null 2>&1 &&
-  notify-send "epidots" "screenshot: $f"
+if [ -f "$f" ]; then
+  # open instantly in a lightweight viewer (feh is already on the system;
+  # no gimp) — backgrounded, so `shot` returns immediately
+  if command -v feh >/dev/null 2>&1; then
+    feh --scale-down "$f" >/dev/null 2>&1 &
+  elif command -v nsxiv >/dev/null 2>&1; then
+    nsxiv "$f" >/dev/null 2>&1 &
+  elif command -v display >/dev/null 2>&1; then
+    display "$f" >/dev/null 2>&1 &
+  fi
+  command -v notify-send >/dev/null 2>&1 &&
+    notify-send "epidots" "screenshot: $f"
+fi
 exit 0

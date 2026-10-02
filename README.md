@@ -96,7 +96,7 @@ from a plain SSH terminal: the display is picked up from your session).
 | Keys | Action |
 |---|---|
 | `Mod+Ctrl+l` | lock now (also locks automatically after 5 min idle) |
-| `Print` / `Mod+Shift+s` | region screenshot → `~/Pictures/` |
+| `Print` / `Mod+Shift+s` | region screenshot → `~/Pictures/`, **opens instantly in feh** (lightweight viewer) |
 | `Mod+Shift+c` | reload i3 config |
 | `Mod+Shift+r` | restart i3 (picks up daemons too) |
 | Volume keys | volume up / down / mute |
@@ -214,10 +214,23 @@ rice off = delete enabled, unlink AFS symlinks, EPITA default i3, stop daemons
 
 ## Update / self-repair
 
+**Automatic**: at every i3 launch a quiet background job checks GitHub
+(only every 7 days, only pulls when something actually changed) and
+re-applies. Opt out with:
+
+```sh
+touch ~/afs/.confs/no-autoupdate
+```
+
+Manual:
+
 ```sh
 ~/afs/rice update   # git-pull the latest rice into ~/afs and re-apply
 ~/afs/rice diag     # read-only report: links, profile health, i3 parse check, login hook
 ```
+
+Note: auto-update refreshes `.confs` from GitHub — local edits to
+`manifest.txt`/configs get overwritten (re-apply them upstream, or opt out).
 
 No git? The installer one-liner from the top of this README also updates:
 
@@ -229,13 +242,13 @@ curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installe
 
 The nix profile lives in AFS (shared between seats) but `/nix/store` is
 **per-seat** — binaries installed on one computer don't resolve on another.
-`rice` now detects this (manifest hash matches but binaries don't run) and
-reinstalls automatically on `rice sync` / `rice on` / next login. If you are
-already in the broken state:
+`rice` detects this (manifest hash matches but binaries don't run) and
+reinstalls **automatically** — on the first login on a new seat, or any time
+you run `rice sync` / `rice on`. To see what's happening:
 
 ```sh
 ~/afs/rice diag     # shows the "profile unusable" line + the fix
-~/afs/rice sync     # reinstalls the profile for THIS computer
+~/afs/rice sync     # forces the reinstall for THIS computer now
 ```
 
 ## Uninstall

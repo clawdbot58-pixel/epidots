@@ -1,0 +1,27 @@
+#!/bin/sh
+# automatic updates: started by i3 at every session launch (exec_always).
+# - quiet background job, never blocks the login
+# - at most every 7 days; only pulls when GitHub actually moved
+# - opt out:  touch ~/afs/.confs/no-autoupdate
+CONF="$HOME/afs/.confs"
+RICE="$HOME/afs/rice"
+[ -f "$CONF/no-autoupdate" ] && exit 0
+command -v git >/dev/null 2>&1 || exit 0
+[ -x "$RICE" ] || exit 0
+
+# rate limit: once every 7 days
+last=$(cat "$CONF/.auto-update" 2>/dev/null)
+case "$last" in '' | *[!0-9]*) last=0 ;; esac
+now=$(date +%s)
+[ $((now - last)) -lt 604800 ] && exit 0
+
+remote=$(git ls-remote https://github.com/clawdbot58-pixel/epidots.git refs/heads/main 2>/dev/null | cut -f1)
+# offline / github unreachable: no marker written, retry at next launch
+[ -n "$remote" ] || exit 0
+
+localsha=$(cat "$CONF/.github-sha" 2>/dev/null)
+if [ "$remote" != "$localsha" ]; then
+  "$RICE" update >/dev/null 2>&1 || exit 0
+fi
+echo "$now" > "$CONF/.auto-update"
+exit 0
