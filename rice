@@ -15,6 +15,11 @@ if [ -n "$SELF_DIR" ] && [ -f "$SELF_DIR/.confs/lib.sh" ]; then
 fi
 [ -f "$LIB" ] || { echo "rice: lib.sh missing ($LIB)" >&2; exit 1; }
 . "$LIB"
+# tolerate an older lib.sh in AFS (e.g. `curl rice` before a full update)
+command -v first_pkg >/dev/null 2>&1 ||
+  first_pkg() {
+    sed -e 's/#.*//' -e 's/[[:space:]]//g' "$MANIFEST" 2>/dev/null | grep -v '^$' | head -1
+  }
 
 case "$1" in
   on)
