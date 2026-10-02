@@ -44,7 +44,7 @@ case "$1" in
       echo "state: OFF"
     fi
     echo "links:"
-    for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile ".local/share/applications/i3lock.desktop"; do
+    for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile Pictures ".local/share/applications/i3lock.desktop"; do
       dst="$HOME/$f"
       if [ "$f" = ".config/i3/config" ] && [ -L "$HOME/.config" ] && [ -e "$dst" ]; then
         printf '  %-20s -> %s (via .config)\n' "$f" "$CONF/config/i3/config"
@@ -218,7 +218,7 @@ case "$1" in
     done
     rm -rf "$CONF/config/i3"
     rmdir "$CONF/config" 2>/dev/null
-    echo "kept in ~/afs/.confs: stock EPITA dotfiles, history, VS Code state"
+    echo "kept in ~/afs/.confs: stock EPITA dotfiles, history, VS Code state, screenshots"
     echo "to also remove installed packages:  rm -rf ~/afs/.confs/nix-profile"
     echo "epidots: uninstalled — re-install: curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installer.sh | sh"
     rm -f "$0"

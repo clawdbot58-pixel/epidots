@@ -126,7 +126,16 @@ apply() {
   # Mod+d launcher (user data dir is always searched by rofi/dmenu)
   link "$CONF/local-share/applications/i3lock.desktop" \
        "$HOME/.local/share/applications/i3lock.desktop"
-  mkdir -p "$HOME/Pictures"
+  # ~/Pictures lives in AFS so screenshots survive the home wipe
+  mkdir -p "$CONF/pictures"
+  if [ -d "$HOME/Pictures" ] && [ ! -L "$HOME/Pictures" ]; then
+    # mid-session upgrade: real dir (maybe with shots) → move them, swap to link
+    for f in "$HOME/Pictures"/* "$HOME/Pictures"/.[!.]*; do
+      [ -e "$f" ] && mv -f "$f" "$CONF/pictures/" 2>/dev/null
+    done
+    rmdir "$HOME/Pictures" 2>/dev/null
+  fi
+  link "$CONF/pictures" "$HOME/Pictures"
   reload_i3
 }
 
@@ -137,7 +146,7 @@ unapply() {
   # symlink, rm -f on an inner path would resolve through it and delete
   # the real file in AFS. After the parent link is gone the inner entries
   # are no-ops.
-  for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS" ".local/share/applications/i3lock.desktop"; do
+  for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS" ".local/share/applications/i3lock.desktop" Pictures; do
     dst="$HOME/$f"
     if [ -L "$dst" ]; then
       case "$(readlink "$dst")" in

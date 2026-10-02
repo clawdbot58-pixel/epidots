@@ -101,6 +101,9 @@ from a plain SSH terminal: the display is picked up from your session).
 | `Mod+Shift+r` | restart i3 (picks up daemons too) |
 | Volume keys | volume up / down / mute |
 
+`~/Pictures` is a link into AFS — screenshots survive reboots and seat
+changes (clear old ones occasionally, they count against the 10 GB quota).
+
 ## Terminal tips
 
 - **zsh is your shell** — login shells hand over to it automatically (no
@@ -209,6 +212,9 @@ rice off = delete enabled, unlink AFS symlinks, EPITA default i3, stop daemons
     ├── tmux.conf        # -> ~/.tmux.conf
     ├── picom.conf       # vsync compositor config
     ├── wallpaper        # optional: path to an image
+    ├── pictures/        # screenshots (~/Pictures -> here, survives wipes)
+    ├── bin/             # helper scripts (shot, daemons, menu, autoupdate, ...)
+    ├── local-share/     # i3lock launcher entry, etc.
     └── config/i3/config # -> ~/.config/i3/config
 ```
 
