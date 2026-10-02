@@ -1,0 +1,12 @@
+#!/bin/sh
+# i3 exec_always: start the rice daemons (pgrep-guarded so an i3 restart
+# never starts a second copy)
+pgrep -x dunst >/dev/null || pgrep -x .dunst-wrapped >/dev/null ||
+  { command -v dunst >/dev/null && dunst; }
+pgrep -x xss-lock >/dev/null ||
+  { command -v xss-lock >/dev/null && xss-lock --transfer-sleep-lock -- i3lock --nofork; }
+pgrep -x xautolock >/dev/null ||
+  { command -v xautolock >/dev/null && xautolock -time 5 -locker i3lock; }
+pgrep -x picom >/dev/null ||
+  { command -v picom >/dev/null && picom --config "$HOME/afs/.confs/picom.conf" --daemon; }
+exit 0

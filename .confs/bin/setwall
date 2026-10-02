@@ -1,0 +1,7 @@
+#!/bin/sh
+# wallpaper: only if the user asked for one — keeps the vanilla background
+w=$(cat "$HOME/afs/.confs/wallpaper" 2>/dev/null)
+if [ -n "$w" ] && [ -f "$w" ] && command -v feh >/dev/null 2>&1; then
+  feh --bg-scale "$w"
+fi
+exit 0

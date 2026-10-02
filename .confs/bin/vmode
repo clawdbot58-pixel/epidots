@@ -1,0 +1,9 @@
+#!/bin/sh
+# VM-only display fix: the virtio-gpu EDID has no 1280x720 mode, add it.
+# No-op on real seats (no Virtual-1 output).
+command -v xrandr >/dev/null || exit 0
+xrandr --output Virtual-1 --mode "1280x720_60.00" 2>/dev/null && exit 0
+xrandr --newmode "1280x720_60.00" 74.50 1280 1344 1472 1664 720 723 728 748 -hsync +vsync 2>/dev/null
+xrandr --addmode Virtual-1 "1280x720_60.00" 2>/dev/null
+xrandr --output Virtual-1 --mode "1280x720_60.00" 2>/dev/null
+exit 0

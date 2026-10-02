@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Lock screen
+GenericName=Screen locker
+Comment=Lock the screen now (i3lock)
+Exec=i3lock
+Icon=system-lock-screen
+Terminal=false
+Categories=Utility;
+StartupNotify=false

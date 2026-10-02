@@ -1,0 +1,19 @@
+#!/bin/sh
+# screenshot: region select → ~/Pictures/shot_<timestamp>.png
+# bound in i3 (Print, Mod+Shift+s); also usable from a terminal: shot
+d="$HOME/Pictures"
+mkdir -p "$d"
+f="$d/shot_$(date +%Y%m%d-%H%M%S).png"
+if command -v scrot >/dev/null 2>&1; then
+  scrot -s "$f"
+elif command -v maim >/dev/null 2>&1; then
+  maim -s "$f"
+elif command -v import >/dev/null 2>&1; then
+  import "$f"
+else
+  echo "shot: no screenshot tool (scrot/maim/import)" >&2
+  exit 1
+fi
+[ -f "$f" ] && command -v notify-send >/dev/null 2>&1 &&
+  notify-send "epidots" "screenshot: $f"
+exit 0

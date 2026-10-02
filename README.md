@@ -39,10 +39,14 @@ Log out / in once and the rice applies itself from then on.
 ~/afs/rice on      # apply (also auto-applies at every login from now on)
 ~/afs/rice off     # remove everything we added — back to vanilla, takes effect immediately
 ~/afs/rice status  # what's enabled, what's linked, profile state
-~/afs/rice sync    # force re-install packages (after editing manifest.txt)
+~/afs/rice sync    # re-apply + reinstall packages (after editing manifest.txt)
+~/afs/rice update  # self-update: pull the latest rice from GitHub and re-apply
+~/afs/rice diag    # read-only diagnostic report (paste it when something breaks)
+~/afs/rice uninstall  # remove the rice, restore vanilla desktop
 ```
 
-`rice on` / `rice off` restart i3 right away — no logout needed.
+`rice on` / `rice off` restart i3 right away — no logout needed (also works
+from a plain SSH terminal: the display is picked up from your session).
 
 ## Keyboard shortcuts
 
@@ -53,7 +57,7 @@ Log out / in once and the rice applies itself from then on.
 | Keys | Action |
 |---|---|
 | `Mod+Return` | terminal (alacritty) |
-| `Mod+d` | app launcher (rofi) |
+| `Mod+d` | app launcher (rofi; includes a **Lock screen** entry) |
 | `Mod+t` | editor (VSCodium, Python out of the box) |
 
 ### Windows
@@ -103,8 +107,8 @@ Log out / in once and the rice applies itself from then on.
   `chsh` needed; `/etc/passwd` is reset at every boot anyway). Plain `bash`
   stays vanilla if you start it yourself.
 - **suggestions**: type a command → grey suggestion appears → `→` to accept;
-  syntax highlighting turns valid commands green; a mistyped command gets a
-  `correct` prompt (say `y`).
+  syntax highlighting turns valid commands green. No auto correction popups —
+  corrections are **manual**: type the bad command, then run `fuck`.
 - **fuck** (pay-respects, the maintained thefuck): typed a wrong command?
   `fuck` (or just `f`) shows the fix → `Enter` runs it. `ff` runs the best
   fix without asking. `Ctrl+X` `Ctrl+X` fixes the line in place without
@@ -117,14 +121,15 @@ Log out / in once and the rice applies itself from then on.
   (system `vim`, config in `.confs/vimrc`)
 - **ranger**: file manager in the terminal (arrow keys, `q` to quit, `?` help)
 - **tmux**: mouse on — click panes, drag status bar, scroll with the wheel;
-  `tmux` to start
+  `tmux` to start; new windows/panes (`prefix c`, `prefix %`, `prefix "`)
+  always open in the **current pane's directory**, never $HOME
 
 ## What you get
 
 - **rofi** launcher, **alacritty** terminal, **thunar** file manager
 - **VSCodium** with Python extension (dot-completions, no Pylance needed)
 - **zsh** as the default shell (autosuggestions, syntax highlighting,
-  typo-correction, completions), **fzf**, **pay-respects** (`fuck`)
+  completions), **fzf**, **pay-respects** (`fuck`)
 - **eza / bat / fd / ripgrep / zoxide / starship / ranger**
 - **vim** with syntax highlighting (`.confs/vimrc`)
 - **tmux**, **btop**, **dunst** notifications, **xss-lock + xautolock** (5 min)
@@ -135,6 +140,12 @@ Log out / in once and the rice applies itself from then on.
 ## Adding / removing packages
 
 Edit `.confs/manifest.txt` (one package per line), then:
+
+```sh
+~/afs/rice sync     # installs new/changed packages (hash-based)
+```
+
+To fully drop a package that is no longer in the manifest:
 
 ```sh
 rm -rf ~/afs/.confs/nix-profile   # force a full re-install
@@ -201,11 +212,49 @@ rice off = delete enabled, unlink AFS symlinks, EPITA default i3, stop daemons
     └── config/i3/config # -> ~/.config/i3/config
 ```
 
-## Uninstall
-
-`~/afs/rice off` — or, for full stock EPITA defaults:
+## Update / self-repair
 
 ```sh
-rm -rf ~/afs/.confs ~/afs/rice
-cp -r /afs/cri.epita.fr/resources/confs/* ~/afs/.confs/
+~/afs/rice update   # git-pull the latest rice into ~/afs and re-apply
+~/afs/rice diag     # read-only report: links, profile health, i3 parse check, login hook
+```
+
+No git? The installer one-liner from the top of this README also updates:
+
+```sh
+curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installer.sh | sh
+```
+
+### Switching computers (rofi/zsh "disappeared", `rice sync` seemed to do nothing)
+
+The nix profile lives in AFS (shared between seats) but `/nix/store` is
+**per-seat** — binaries installed on one computer don't resolve on another.
+`rice` now detects this (manifest hash matches but binaries don't run) and
+reinstalls automatically on `rice sync` / `rice on` / next login. If you are
+already in the broken state:
+
+```sh
+~/afs/rice diag     # shows the "profile unusable" line + the fix
+~/afs/rice sync     # reinstalls the profile for THIS computer
+```
+
+## Uninstall
+
+```sh
+~/afs/rice uninstall
+```
+
+Or without any rice installed (fetches it first):
+
+```sh
+curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/uninstall.sh | sh
+```
+
+This removes the rice's links and files, stops the daemons and restores the
+vanilla EPITA desktop. Stock EPITA dotfiles (`~/afs/.confs/gitconfig`, `ssh`,
+…), your shell history and VS Code state are kept. Installed packages are
+kept too (they cost a few KB of AFS symlinks); to remove them as well:
+
+```sh
+rm -rf ~/afs/.confs/nix-profile
 ```

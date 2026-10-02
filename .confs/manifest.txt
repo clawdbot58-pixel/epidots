@@ -27,6 +27,7 @@ dunst
 xss-lock
 xautolock
 picom
+scrot
 
 # editor (VS Code without telemetry; python ext + dot-suggestions)
 vscodium

@@ -28,23 +28,42 @@ link_stock_dots() {
   return 0
 }
 
+# first package listed in the manifest (used as the "does the profile work?"
+# probe: bin/<name> must resolve on THIS machine)
+first_pkg() {
+  sed -e 's/#.*//' -e 's/[[:space:]]//g' "$MANIFEST" 2>/dev/null | grep -v '^$' | head -1
+}
+
 # Install packages from manifest.txt into the AFS profile (symlinks into
-# /nix/store; a few KB in AFS). Re-runs only when the manifest changes.
+# /nix/store; a few KB in AFS). Re-runs when the manifest changes OR when
+# the installed binaries do not resolve on THIS machine: the profile is
+# shared via AFS across seats but /nix/store is per-seat, so a profile
+# built elsewhere dangles here (rofi/zsh look "uninstalled").
 ensure_profile() {
   [ -f "$MANIFEST" ] || return 0
   want=$(sha256sum "$MANIFEST" | cut -d' ' -f1)
   have=$(cat "$CONF/.manifest.sha" 2>/dev/null)
-  [ "$want" = "$have" ] && return 0
+  firstpkg=$(first_pkg)
+  if [ "$want" = "$have" ] && [ -n "$firstpkg" ] && [ -x "$PROFILE/bin/$firstpkg" ]; then
+    return 0
+  fi
+  if [ "$want" = "$have" ] && [ -n "$firstpkg" ]; then
+    echo "epidots: profile unusable on this machine (built on another seat?) — reinstalling..."
+  fi
 
   # shellcheck disable=SC2046
   set -- $(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$MANIFEST" | grep -v '^$' | sed 's|^|nixpkgs#|')
   [ $# -eq 0 ] && { echo "$want" > "$CONF/.manifest.sha"; return 0; }
 
-  echo "epidots: installing packages from manifest ($# packages, first run only)..."
-  # Do NOT create $PROFILE itself: `nix profile install --profile` creates it
-  # as a symlink (-> <name>-N-link). A plain directory makes nix fail with
-  # "reading symbolic link ...: Invalid argument".
+  echo "epidots: installing packages from manifest ($# packages)..."
   mkdir -p "$(dirname "$PROFILE")"
+  # heal states nix cannot use: plain dir, or a dangling profile symlink
+  if [ -d "$PROFILE" ] && [ ! -L "$PROFILE" ]; then
+    echo "epidots: profile was a plain directory (nix cannot use it) — rebuilding" >&2
+    rm -rf "$PROFILE"
+  elif [ -L "$PROFILE" ] && [ ! -d "$PROFILE" ]; then
+    rm -f "$PROFILE"
+  fi
   # `install` on older nix, `add` on newer — same fallback as tsunooky/epidots
   if nix profile install --profile "$PROFILE" "$@" ||
      nix profile add --profile "$PROFILE" "$@"; then
@@ -52,16 +71,30 @@ ensure_profile() {
     # state file must live beside the manifest, not inside the profile.
     echo "$want" > "$CONF/.manifest.sha"
   else
-    echo "epidots: nix profile install failed — will retry at next login" >&2
+    echo "epidots: nix profile install failed — check: ~/afs/rice diag" >&2
     return 1
   fi
 }
 
 # Restart i3 if we are inside a session (restart re-runs exec_always, so
 # the daemons come back after 'rice on'); no-op at PAM login (no X yet).
+# When run over SSH / a bare shell, DISPLAY is missing — pick it up from
+# the systemd user session so `rice on` still reloads the running i3.
 reload_i3() {
   command -v i3-msg >/dev/null 2>&1 || return 0
-  i3-msg restart >/dev/null 2>&1 || true
+  if [ -z "${DISPLAY:-}" ]; then
+    _penv=$(systemctl --user show-environment 2>/dev/null)
+    _d=$(printf '%s\n' "$_penv" | sed -n 's/^DISPLAY=//p' | head -1)
+    _xa=$(printf '%s\n' "$_penv" | sed -n 's/^XAUTHORITY=//p' | head -1)
+    [ -n "$_d" ] && { DISPLAY="$_d"; export DISPLAY; }
+    [ -n "$_xa" ] && { XAUTHORITY="$_xa"; export XAUTHORITY; }
+  fi
+  if [ -z "${DISPLAY:-}" ]; then
+    echo "epidots: note: no X display here — i3 picks up the config at next login"
+    return 0
+  fi
+  i3-msg restart >/dev/null 2>&1 ||
+    echo "epidots: note: could not reach i3 (DISPLAY=$DISPLAY) — config applies at next i3 restart"
 }
 
 apply() {
@@ -89,6 +122,10 @@ apply() {
   mkdir -p "$CONF/vscode-oss" "$CONF/vscode-oss-config"
   link "$CONF/vscode-oss" "$HOME/.vscode-oss"
   link "$CONF/vscode-oss-config" "$HOME/.config/Code - OSS"
+  # i3lock has no .desktop file anywhere — ship one so it shows in the
+  # Mod+d launcher (user data dir is always searched by rofi/dmenu)
+  link "$CONF/local-share/applications/i3lock.desktop" \
+       "$HOME/.local/share/applications/i3lock.desktop"
   mkdir -p "$HOME/Pictures"
   reload_i3
 }
@@ -100,7 +137,7 @@ unapply() {
   # symlink, rm -f on an inner path would resolve through it and delete
   # the real file in AFS. After the parent link is gone the inner entries
   # are no-ops.
-  for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS"; do
+  for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile .vscode-oss ".config/Code - OSS" ".local/share/applications/i3lock.desktop"; do
     dst="$HOME/$f"
     if [ -L "$dst" ]; then
       case "$(readlink "$dst")" in

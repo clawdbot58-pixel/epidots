@@ -6,33 +6,30 @@ font pango:monospace 10
 
 # wallpaper: untouched by default — keeps the vanilla EPITA background (stealth).
 # to override with an image: echo /path/to/image > ~/afs/.confs/wallpaper
-exec --no-startup-id sh -c 'w=$(cat "$HOME/afs/.confs/wallpaper" 2>/dev/null); [ -n "$w" ] && [ -f "$w" ] && feh --bg-scale "$w"; true'
+# (shell logic lives in ~/afs/.confs/bin/* — semicolons inside i3 exec lines
+# break the parser on older i3 builds used on some EPITA seats)
+exec --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/setwall'
 
 # notification daemon + auto-lock (installed by the rice profile; guarded)
 # daemons: exec_always (runs at startup AND after every i3 restart),
 # pgrep-guarded so a restart never starts a second copy
-exec_always --no-startup-id sh -c 'pgrep -x dunst >/dev/null || pgrep -x .dunst-wrapped >/dev/null || { command -v dunst >/dev/null && dunst; }'
-exec_always --no-startup-id sh -c 'pgrep -x xss-lock >/dev/null || { command -v xss-lock >/dev/null && xss-lock --transfer-sleep-lock -- i3lock --nofork; }'
-# auto-lock after 5 minutes idle
-exec_always --no-startup-id sh -c 'pgrep -x xautolock >/dev/null || { command -v xautolock >/dev/null && xautolock -time 5 -locker i3lock; }'
-# compositor: vsync + full damage tracking (config fixes tearing/stale regions)
-exec_always --no-startup-id sh -c 'pgrep -x picom >/dev/null || { command -v picom >/dev/null && picom --config "$HOME/afs/.confs/picom.conf" --daemon; }'
+exec_always --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/daemons'
 # VM-only: virtio-gpu has no 1280x720 mode in EDID — add it (no-op on real machines)
-exec_always --no-startup-id sh -c 'command -v xrandr >/dev/null && xrandr --output Virtual-1 --mode "1280x720_60.00" 2>/dev/null || { xrandr --newmode "1280x720_60.00" 74.50 1280 1344 1472 1664 720 723 728 748 -hsync +vsync 2>/dev/null; xrandr --addmode Virtual-1 "1280x720_60.00" 2>/dev/null; xrandr --output Virtual-1 --mode "1280x720_60.00" 2>/dev/null; }; true'
+exec_always --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/vmode'
 
 # terminal + launcher
 bindsym $mod+Return exec alacritty
-bindsym $mod+d exec --no-startup-id sh -c 'command -v rofi >/dev/null && rofi -show drun || dmenu_run'
+bindsym $mod+d exec --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/menu'
 # GUI editor (vscodium: syntax highlighting, dot-suggestions in python)
 bindsym $mod+t exec --no-startup-id sh -c 'command -v codium >/dev/null && codium'
 
 # kubuntu-style mouse: mod+left = move, mod+right = resize (floating and tiled)
 floating_modifier Mod4
 
-# lock + screenshot (region select)
+# lock + screenshot (region select → ~/Pictures/shot_*.png; also: `shot`)
 bindsym $mod+Ctrl+l exec i3lock
-bindsym Print exec --no-startup-id sh -c 'mkdir -p "$HOME/Pictures"; scrot -s "$HOME/Pictures/shot_$(date +%Y%m%d-%H%M%S).png"'
-bindsym $mod+Shift+s exec --no-startup-id sh -c 'mkdir -p "$HOME/Pictures"; scrot -s "$HOME/Pictures/shot_$(date +%Y%m%d-%H%M%S).png"'
+bindsym Print exec --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/shot'
+bindsym $mod+Shift+s exec --no-startup-id sh -c 'exec $HOME/afs/.confs/bin/shot'
 
 # window management
 bindsym $mod+Shift+q kill

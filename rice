@@ -1,12 +1,20 @@
 #!/bin/sh
 # rice — on/off switch for the epidots configuration.
-# Usage: ~/afs/rice {on|off|status|sync}
+# Usage: ~/afs/rice {on|off|status|sync|update|diag|uninstall}
 AFS_DIR="${AFS_DIR:-$HOME/afs}"
 CONF="$AFS_DIR/.confs"
 export PATH="/run/current-system/sw/bin:$HOME/.nix-profile/bin:$PATH"
 
-[ -f "$CONF/lib.sh" ] || { echo "rice: $CONF/lib.sh missing" >&2; exit 1; }
-. "$CONF/lib.sh"
+# lib.sh normally lives beside us in AFS; when run from a fresh clone
+# (update/uninstall), prefer the clone's copy so stale AFS code can't
+# block the repair — AFS_DIR still points at the real rice in ~/afs.
+SELF_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd)
+LIB="$CONF/lib.sh"
+if [ -n "$SELF_DIR" ] && [ -f "$SELF_DIR/.confs/lib.sh" ]; then
+  LIB="$SELF_DIR/.confs/lib.sh"
+fi
+[ -f "$LIB" ] || { echo "rice: lib.sh missing ($LIB)" >&2; exit 1; }
+. "$LIB"
 
 case "$1" in
   on)
@@ -22,7 +30,7 @@ case "$1" in
   sync)
     [ -f "$CONF/enabled" ] || { echo "rice: run 'rice on' first" >&2; exit 1; }
     apply
-    echo "epidots: re-applied (manifest changes are installed automatically)"
+    echo "epidots: re-applied (missing/unusable profile packages are reinstalled automatically)"
     ;;
   status)
     if [ -f "$CONF/enabled" ]; then
@@ -31,7 +39,7 @@ case "$1" in
       echo "state: OFF"
     fi
     echo "links:"
-    for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile; do
+    for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile ".local/share/applications/i3lock.desktop"; do
       dst="$HOME/$f"
       if [ "$f" = ".config/i3/config" ] && [ -L "$HOME/.config" ] && [ -e "$dst" ]; then
         printf '  %-20s -> %s (via .config)\n' "$f" "$CONF/config/i3/config"
@@ -41,14 +49,164 @@ case "$1" in
         printf '  %-20s (absent)\n' "$f"
       fi
     done
-    if [ -f "$CONF/.manifest.sha" ]; then
-      echo "profile: installed (manifest hash ok)"
-    else
+    fp=$(first_pkg)
+    if [ ! -f "$CONF/.manifest.sha" ]; then
       echo "profile: not installed yet"
+    elif [ -n "$fp" ] && [ -x "$PROFILE/bin/$fp" ]; then
+      echo "profile: ok (manifest hash matches, binaries resolve here)"
+    else
+      echo "profile: INSTALLED BUT UNUSABLE on this machine — run: ~/afs/rice sync"
     fi
     ;;
+  update)
+    command -v git >/dev/null 2>&1 || {
+      echo "rice update: git not available — use instead:" >&2
+      echo "  curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installer.sh | sh" >&2
+      exit 1
+    }
+    TMP=$(mktemp -d) || exit 1
+    if ! git clone --depth 1 https://github.com/clawdbot58-pixel/epidots.git "$TMP/e" >/dev/null 2>&1; then
+      echo "rice update: clone failed (network?) — use instead:" >&2
+      echo "  curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installer.sh | sh" >&2
+      rm -rf "$TMP"
+      exit 1
+    fi
+    cp -r "$TMP/e/.confs/." "$CONF/"
+    # atomic replace: a running shell keeps reading the old inode
+    cp "$TMP/e/rice" "$AFS_DIR/rice.new" &&
+      chmod +x "$AFS_DIR/rice.new" &&
+      mv -f "$AFS_DIR/rice.new" "$AFS_DIR/rice"
+    chmod +x "$CONF/install.sh" "$CONF/bin/"* 2>/dev/null
+    rm -rf "$TMP"
+    if [ -f "$CONF/enabled" ]; then
+      apply
+      echo "epidots: updated from GitHub and re-applied"
+    else
+      echo "epidots: updated from GitHub (rice is OFF — run 'rice on' to apply)"
+    fi
+    ;;
+  diag)
+    echo "=== epidots diagnostic ==="
+    echo "date:   $(date)"
+    echo "host:   $(hostname 2>/dev/null)  user: $USER  home: $HOME"
+    echo "afs:    $AFS_DIR -> $(readlink "$HOME/afs" 2>/dev/null || echo '(real dir / missing)')"
+    echo "rice:   $(sha256sum "$0" 2>/dev/null | cut -c1-12)  lib: $(sha256sum "$CONF/lib.sh" 2>/dev/null | cut -c1-12)"
+    echo
+    echo "--- links ---"
+    for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile .local/share/applications/i3lock.desktop; do
+      dst="$HOME/$f"
+      if [ -L "$dst" ]; then
+        printf '  %-20s -> %s\n' "$f" "$(readlink "$dst")"
+      elif [ -e "$dst" ]; then
+        printf '  %-20s (real file/dir)\n' "$f"
+      else
+        printf '  %-20s (absent)\n' "$f"
+      fi
+    done
+    [ -f "$CONF/enabled" ] && echo "state:  ON" || echo "state:  OFF (auto-apply disabled)"
+    echo
+    echo "--- profile (the usual suspect when switching seats) ---"
+    if [ -L "$PROFILE" ] && [ -d "$PROFILE" ]; then
+      echo "  nix-profile: symlink -> $(readlink "$PROFILE")"
+    elif [ -d "$PROFILE" ]; then
+      echo "  nix-profile: PLAIN DIRECTORY (nix cannot use this!)"
+    elif [ -L "$PROFILE" ]; then
+      echo "  nix-profile: DANGLING symlink -> $(readlink "$PROFILE")"
+    else
+      echo "  nix-profile: missing"
+    fi
+    fp=$(first_pkg)
+    if [ -n "$fp" ] && [ -x "$PROFILE/bin/$fp" ]; then
+      echo "  bin/$fp: resolves OK"
+    else
+      echo "  bin/$fp: MISSING/DANGLING -> profile was built on another seat. FIX:"
+      echo "      rm -f $CONF/.manifest.sha && ~/afs/rice sync"
+    fi
+    [ -x "$PROFILE/bin/zsh" ]     && echo "  bin/zsh: OK"     || echo "  bin/zsh: missing"
+    [ -x "$PROFILE/bin/rofi" ]    && echo "  bin/rofi: OK"    || echo "  bin/rofi: missing (Mod+d falls back to dmenu)"
+    [ -f "$CONF/.manifest.sha" ]  && echo "  manifest sha: $(cat "$CONF/.manifest.sha" | cut -c1-12)..." || echo "  manifest sha: absent (never installed)"
+    nbroken=$(find "$PROFILE" -xtype l 2>/dev/null | wc -l)
+    [ "$nbroken" -gt 0 ] 2>/dev/null && echo "  broken store symlinks: $nbroken"
+    nix --version 2>/dev/null | sed 's/^/  /' || echo "  nix: NOT AVAILABLE"
+    echo
+    echo "--- tools on PATH ---"
+    for t in zsh rofi dmenu_run scrot i3 i3-msg alacritty tmux starship feh; do
+      p=$(command -v "$t" 2>/dev/null)
+      [ -n "$p" ] && echo "  $t: $p" || echo "  $t: NOT FOUND"
+    done
+    echo
+    echo "--- i3 ---"
+    echo "  DISPLAY=${DISPLAY:-<empty>}"
+    cfg=""
+    if [ -L "$HOME/.config" ] && [ -f "$HOME/.config/i3/config" ]; then
+      cfg="$HOME/.config/i3/config"
+      echo "  config: $cfg (via ~/.config -> $(readlink "$HOME/.config"))"
+    elif [ -e "$HOME/.config/i3/config" ]; then
+      cfg="$HOME/.config/i3/config"
+      echo "  config: $cfg"
+    fi
+    if [ -n "$cfg" ]; then
+      echo "  config sha: $(sha256sum "$cfg" 2>/dev/null | cut -c1-12)"
+      i3out=$(i3 -C -c "$cfg" 2>&1)
+      if [ -z "$i3out" ]; then
+        echo "  i3 -C: config parses clean"
+      else
+        echo "  i3 -C: PARSE ERRORS:"
+        printf '%s\n' "$i3out" | head -8 | sed 's/^/    /'
+        echo "  FIX: ~/afs/rice update   (config differs from GitHub)"
+      fi
+    else
+      echo "  config: absent (stock i3 is running)"
+    fi
+    if command -v i3-msg >/dev/null 2>&1; then
+      if [ -z "$DISPLAY" ] && command -v systemctl >/dev/null 2>&1; then
+        _d=$(systemctl --user show-environment 2>/dev/null | sed -n 's/^DISPLAY=//p' | head -1)
+        [ -n "$_d" ] && DISPLAY="$_d"
+      fi
+      v=$(DISPLAY="$DISPLAY" i3-msg -t get_version 2>/dev/null)
+      [ -n "$v" ] && echo "  running i3: $v" || echo "  i3-msg: unreachable (no X here — normal over ssh)"
+    fi
+    echo
+    echo "--- login hook (auto-apply) ---"
+    if grep -q pam_epita /etc/pam.d/sshd 2>/dev/null; then
+      pamline=$(grep pam_epita /etc/pam.d/sshd | grep -v '^[[:space:]]*#' | head -1)
+      if [ -n "$pamline" ]; then
+        echo "  pam_epita: ACTIVE ($(grep -n pam_epita /etc/pam.d/sshd | grep -v ':#' | head -1 | cut -d: -f1))"
+      else
+        echo "  pam_epita: present but ONLY IN COMMENTS — auto-apply broken"
+      fi
+      echo "  uid gate: $(grep 'session.*pam_succeed_if.*uid <= 1000' /etc/pam.d/sshd | head -1 | sed 's/.*\[//;s/\].*//')"
+      echo "    (must be success=2 — success=3 skips pam_epita for EPITA users!)"
+    else
+      echo "  pam_epita: NOT in /etc/pam.d/sshd (auto-apply at ssh login disabled)"
+    fi
+    echo
+    echo "--- hints ---"
+    [ -f "$CONF/enabled" ] || echo "  rice is OFF: ~/afs/rice on"
+    [ ! -L "$HOME/.zshrc" ] && echo "  links missing: ~/afs/rice on"
+    echo "  self-update: ~/afs/rice update    full report: re-run ~/afs/rice diag"
+    ;;
+  uninstall)
+    echo "epidots: uninstalling (vanilla restore)..."
+    rm -f "$CONF/enabled"
+    unapply
+    # rice-owned files only — stock EPITA seeds (gitconfig, ssh, signature,
+    # mozilla, …), user history and VS Code state stay untouched
+    for f in bashrc profile zshrc vimrc tmux.conf picom.conf lib.sh \
+             install.sh manifest.txt .manifest.sha enabled installer.sh \
+             bin local-share; do
+      rm -rf "$CONF/$f"
+    done
+    rm -rf "$CONF/config/i3"
+    rmdir "$CONF/config" 2>/dev/null
+    echo "kept in ~/afs/.confs: stock EPITA dotfiles, history, VS Code state"
+    echo "to also remove installed packages:  rm -rf ~/afs/.confs/nix-profile"
+    echo "epidots: uninstalled — re-install: curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installer.sh | sh"
+    rm -f "$0"
+    exit 0
+    ;;
   *)
-    echo "usage: rice {on|off|status|sync}" >&2
+    echo "usage: rice {on|off|status|sync|update|diag|uninstall}" >&2
     exit 1
     ;;
 esac
