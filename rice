@@ -76,17 +76,17 @@ case "$1" in
       rm -rf "$TMP"
       exit 1
     fi
-    # record what we are on, so bin/autoupdate can compare against GitHub
-    if [ -d "$TMP/e/.git" ]; then
-      _sha=$(git -C "$TMP/e" rev-parse HEAD 2>/dev/null)
-      [ -n "$_sha" ] && echo "$_sha" > "$CONF/.github-sha"
-    fi
+    # remember what GitHub said; the marker itself is written only AFTER
+    # the files have landed (below) — a failed copy must not look "current"
+    _sha=""
+    [ -d "$TMP/e/.git" ] && _sha=$(git -C "$TMP/e" rev-parse HEAD 2>/dev/null)
     cp -r "$TMP/e/.confs/." "$CONF/"
     # atomic replace: a running shell keeps reading the old inode
     cp "$TMP/e/rice" "$AFS_DIR/rice.new" &&
       chmod +x "$AFS_DIR/rice.new" &&
       mv -f "$AFS_DIR/rice.new" "$AFS_DIR/rice"
     chmod +x "$CONF/install.sh" "$CONF/bin/"* 2>/dev/null
+    [ -n "$_sha" ] && echo "$_sha" > "$CONF/.github-sha"
     rm -rf "$TMP"
     if [ -f "$CONF/enabled" ]; then
       apply
