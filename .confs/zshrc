@@ -4,6 +4,11 @@ export PATH="$HOME/.nix-profile/bin:$HOME/afs/.confs/bin:$PATH"
 # history lives in AFS so it survives the home wipe (like tsunooky/epidots)
 HISTFILE="$HOME/.zsh_history"
 [ -d "$HOME/afs/.confs" ] && HISTFILE="$HOME/afs/.confs/.zsh_history"
+# self-heal: an abrupt power-off mid-history-write can leave NUL bytes,
+# which zsh reports as a "corrupt history file" — strip them before use
+if [ -f "$HISTFILE" ] && ! tr -d '\000' < "$HISTFILE" | cmp -s - "$HISTFILE"; then
+  tr -d '\000' < "$HISTFILE" > "$HISTFILE.tmp" && mv -f "$HISTFILE.tmp" "$HISTFILE"
+fi
 HISTSIZE=10000
 SAVEHIST=10000
 setopt SHARE_HISTORY HIST_IGNORE_DUPS EXTENDED_GLOB AUTO_CD

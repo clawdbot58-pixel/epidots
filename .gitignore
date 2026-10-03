@@ -1,3 +1,5 @@
 .confs/enabled
 .confs/nix-profile/
 .confs/wallpaper
+.confs/.zsh_history*
+.confs/.bash_history
