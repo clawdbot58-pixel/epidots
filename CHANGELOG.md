@@ -20,6 +20,13 @@ Notable changes to epidots. **Requests and bugs → [GitHub issues](https://gith
 - `i3lock` entry in the Mod+d launcher; tmux pane/window binds keep the
   current working directory.
 
+### Safety
+
+- **Never-bricked**: the PAM login hook always exits 0 (a broken rice can't
+  block a login); `rice update` refuses updates whose shell files don't parse
+  or whose i3 config fails `i3 -C`; `apply` never restarts i3 onto a config
+  that doesn't parse; `~/afs/rice off` is an instant vanilla escape hatch.
+
 ### Changed
 
 - i3 exec lines moved into `.confs/bin/*` — old i3 versions mis-parse `;`

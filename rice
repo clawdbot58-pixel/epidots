@@ -77,6 +77,29 @@ case "$1" in
       rm -rf "$TMP"
       exit 1
     fi
+    # SAFETY GATE: refuse an update that would brick the session.
+    # Shell files must parse; i3 config must pass `i3 -C`. On failure we
+    # keep your current (working) version and exit non-zero, so
+    # bin/autoupdate does NOT mark this as current and retries later.
+    _bad=""
+    for s in "$TMP/e/rice" "$TMP/e/.confs/lib.sh" "$TMP/e/.confs/install.sh" "$TMP/e/.confs/bin/"*; do
+      [ -f "$s" ] || continue
+      sh -n "$s" 2>/dev/null || { _bad="$s (shell syntax)"; break; }
+    done
+    if [ -z "$_bad" ] && command -v zsh >/dev/null 2>&1 &&
+      ! zsh -n "$TMP/e/.confs/zshrc" 2>/dev/null; then
+      _bad=".confs/zshrc (zsh syntax)"
+    fi
+    if [ -z "$_bad" ] && command -v i3 >/dev/null 2>&1 &&
+      ! i3 -C -c "$TMP/e/.confs/config/i3/config" >/dev/null 2>&1; then
+      _bad="i3 config (i3 -C parse check)"
+    fi
+    if [ -n "$_bad" ]; then
+      echo "rice update: upstream update FAILED its safety check: $_bad" >&2
+      echo "rice update: keeping your current working version — not installed" >&2
+      rm -rf "$TMP"
+      exit 1
+    fi
     # remember what GitHub said; the marker itself is written only AFTER
     # the files have landed (below) — a failed copy must not look "current"
     _sha=""

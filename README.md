@@ -261,6 +261,24 @@ you run `rice sync` / `rice on`. To see what's happening:
 ~/afs/rice sync     # forces the reinstall for THIS computer now
 ```
 
+## Never-bricked by design
+
+Auto-updates are safe by construction:
+
+- **Login can never be blocked.** The PAM hook (`install.sh`) always exits 0 —
+  a broken rice degrades to "no rice today", never "no session".
+- **Broken updates are refused.** `rice update` syntax-checks every shell
+  file and parse-checks the i3 config (`i3 -C`) *before* installing;
+  anything that fails keeps your current working version.
+- **i3 never restarts onto a bad config.** If the config on disk doesn't
+  parse, `apply` skips the reload and your current session stays up.
+- **Instant escape hatch**, works even with everything else broken:
+
+```sh
+~/afs/rice off      # vanilla desktop immediately
+curl -L https://raw.githubusercontent.com/clawdbot58-pixel/epidots/main/installer.sh | sh   # restore
+```
+
 ## Uninstall
 
 ```sh

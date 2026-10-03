@@ -136,6 +136,13 @@ apply() {
     rmdir "$HOME/Pictures" 2>/dev/null
   fi
   link "$CONF/pictures" "$HOME/Pictures"
+  # never restart i3 onto a config that doesn't parse (that bricks the session)
+  if command -v i3 >/dev/null 2>&1 &&
+    ! i3 -C -c "$CONF/config/i3/config" >/dev/null 2>&1; then
+    echo "epidots: WARNING: i3 config fails to parse — NOT reloading i3 (current session stays up)"
+    echo "epidots: fix it: nano ~/afs/.confs/config/i3/config   then: ~/afs/rice sync"
+    return 0
+  fi
   reload_i3
 }
 
