@@ -43,6 +43,7 @@ case "$1" in
     else
       echo "state: OFF"
     fi
+    echo "version: v$(cat "$CONF/version" 2>/dev/null || echo unknown)"
     echo "links:"
     for f in .bashrc .profile .zshrc .vimrc .tmux.conf .config .config/i3/config .nix-profile Pictures ".local/share/applications/i3lock.desktop"; do
       dst="$HOME/$f"
@@ -97,6 +98,7 @@ case "$1" in
     ;;
   diag)
     echo "=== epidots diagnostic ==="
+    echo "ver:    v$(cat "$CONF/version" 2>/dev/null || echo unknown)  (notes: github.com/clawdbot58-pixel/epidots/blob/main/CHANGELOG.md)"
     echo "date:   $(date)"
     echo "host:   $(hostname 2>/dev/null)  user: $USER  home: $HOME"
     echo "afs:    $AFS_DIR -> $(readlink "$HOME/afs" 2>/dev/null || echo '(real dir / missing)')"
@@ -213,7 +215,7 @@ case "$1" in
     # mozilla, …), user history and VS Code state stay untouched
     for f in bashrc profile zshrc vimrc tmux.conf picom.conf lib.sh \
              install.sh manifest.txt .manifest.sha enabled installer.sh \
-             bin local-share .auto-update .github-sha no-autoupdate; do
+             bin local-share version .auto-update .github-sha no-autoupdate; do
       rm -rf "$CONF/$f"
     done
     rm -rf "$CONF/config/i3"

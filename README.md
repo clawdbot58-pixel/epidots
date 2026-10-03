@@ -4,6 +4,10 @@ Functionality-first NixOS/EPITA rice that lives **entirely in AFS** (`~/afs`).
 The system stays vanilla — home is wiped on every boot, so everything is
 re-applied automatically at login.
 
+**Version `v0.95`** — patch notes: [CHANGELOG.md](CHANGELOG.md) ·
+releases: [GitHub Releases](https://github.com/clawdbot58-pixel/epidots/releases) ·
+requests: [GitHub issues](https://github.com/clawdbot58-pixel/epidots/issues)
+
 ## Install (school machine)
 
 One line (same idea as [tsunooky/epidots](https://github.com/tsunooky/epidots)):
